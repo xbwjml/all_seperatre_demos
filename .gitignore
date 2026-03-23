@@ -1,0 +1,51 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### macOS ###
+.DS_Store
+
+### SkyWalking Agent ###
+# Agent jar 包和插件体积较大，不提交到 Git，由启动脚本自动下载
+skywalking-agent/skywalking-agent.jar
+skywalking-agent/plugins/
+skywalking-agent/optional-plugins/
+skywalking-agent/optional-reporter-plugins/
+skywalking-agent/bootstrap-plugins/
+skywalking-agent/activations/
+skywalking-agent/logs/
+# agent.config 含有环境配置，保留提交（可按需注释掉下面这行）
+# skywalking-agent/config/agent.config
+
+### Docker ###
+.env
