@@ -72,6 +72,6 @@ public class TaskController {
 
     // ---------- request records ----------
 
-    record SubmitRequest(String userId, String payload, int cost) {}
-    record BatchRequest(String userId, int count, int cost) {}
+    public record SubmitRequest(String userId, String payload, int cost) {}
+    public record BatchRequest(String userId, int count, int cost) {}
 }
