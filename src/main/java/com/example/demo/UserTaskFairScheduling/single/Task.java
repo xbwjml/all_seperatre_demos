@@ -1,4 +1,4 @@
-package com.example.demo.UserTaskFairScheduling;
+package com.example.demo.UserTaskFairScheduling.single;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

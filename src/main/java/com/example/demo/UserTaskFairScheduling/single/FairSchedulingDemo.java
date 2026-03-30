@@ -1,15 +1,13 @@
-package com.example.demo.UserTaskFairScheduling;
+package com.example.demo.UserTaskFairScheduling.single;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 启动时自动运行的演示：

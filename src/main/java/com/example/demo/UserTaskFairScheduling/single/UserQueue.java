@@ -1,4 +1,4 @@
-package com.example.demo.UserTaskFairScheduling;
+package com.example.demo.UserTaskFairScheduling.single;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
