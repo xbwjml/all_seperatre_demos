@@ -9,8 +9,15 @@ import java.util.concurrent.LinkedBlockingQueue;
  *   每次从该队列取出并执行一个任务后，virtualTime += task.getCost()
  *   调度器始终优先选取 virtualTime 最小的用户队列，
  *   从而确保长期公平：无论提交多少任务，每个用户占用的"调度份额"趋于相等。
+ *
+ * 内存安全：
+ *   队列容量上限为 MAX_SIZE，超限时 enqueue 返回 false（背压到调用方）。
+ *   调用方（FairTaskScheduler）持有外部锁，size() 检查与 offer() 之间不存在竞态。
  */
 public class UserQueue implements Comparable<UserQueue> {
+
+    /** 每用户待执行任务上限，超过此值时拒绝新任务 */
+    static final int MAX_SIZE = 500;
 
     private final String userId;
     private final LinkedBlockingQueue<Task> queue;
@@ -27,9 +34,16 @@ public class UserQueue implements Comparable<UserQueue> {
         this.virtualTime = initialVirtualTime;
     }
 
-    /** 提交任务入队 */
-    public void enqueue(Task task) {
-        queue.offer(task);
+    /**
+     * 提交任务入队。
+     *
+     * @return true=入队成功；false=队列已满，调用方应向客户端返回 429
+     */
+    public boolean enqueue(Task task) {
+        if (queue.size() >= MAX_SIZE) {
+            return false;
+        }
+        return queue.offer(task);
     }
 
     /** 取出队头任务，若队列为空返回 null */

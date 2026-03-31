@@ -2,6 +2,7 @@ package com.example.demo.UserTaskFairScheduling.single;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
@@ -22,6 +23,11 @@ import java.util.function.Consumer;
  *    避免新用户因 vt=0 而独占调度资源。
  * 4. 用户队列变为空时，从优先队列移除；下次提交任务时重新加入。
  * 5. 任务实际执行逻辑由外部通过 taskHandler 注入，保持调度器与业务解耦。
+ *
+ * 内存安全（三项修复）：
+ * A. 每用户队列设置上限（UserQueue.MAX_SIZE），超限时 submitTask 返回 false（背压）。
+ * B. workerPool 使用有界 ArrayBlockingQueue，队列满时阻塞调度线程（背压）。
+ * C. 定时清理 userQueues 中队列已空的条目，防止长期运行后内存持续增长。
  */
 @Component
 public class FairTaskScheduler {
@@ -52,18 +58,35 @@ public class FairTaskScheduler {
     private volatile boolean running = true;
 
     public FairTaskScheduler() {
-        this.readyQueue  = new PriorityQueue<>();
-        this.userQueues  = new ConcurrentHashMap<>();
-        this.lock        = new ReentrantLock();
-        this.notEmpty    = lock.newCondition();
-        this.workerPool  = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors(),
-                r -> {
-                    Thread t = new Thread(r, "fair-worker");
-                    t.setDaemon(true);
-                    return t;
+        this.readyQueue = new PriorityQueue<>();
+        this.userQueues = new ConcurrentHashMap<>();
+        this.lock       = new ReentrantLock();
+        this.notEmpty   = lock.newCondition();
+
+        // 修复B：workerPool 使用有界队列 + 阻塞式拒绝策略（背压）
+        // 当等待队列满时，拒绝处理器将任务重新 put() 回队列，
+        // 阻塞调度线程直到有空位，而不是无限堆积 Runnable 对象。
+        int workers       = Runtime.getRuntime().availableProcessors();
+        int queueCapacity = workers * 4;
+        ThreadFactory threadFactory = r -> {
+            Thread t = new Thread(r, "fair-worker");
+            t.setDaemon(true);
+            return t;
+        };
+        this.workerPool = new ThreadPoolExecutor(
+                workers, workers,
+                0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(queueCapacity),
+                threadFactory,
+                (runnable, executor) -> {
+                    try {
+                        executor.getQueue().put(runnable);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
         );
+
         // 默认 handler：模拟任务耗时（100ms * cost）
         this.taskHandler = task -> {
             try {
@@ -76,7 +99,8 @@ public class FairTaskScheduler {
         this.schedulerThread = new Thread(this::schedulerLoop, "fair-scheduler");
         this.schedulerThread.setDaemon(true);
         this.schedulerThread.start();
-        log.info("[FairScheduler] 启动完成，工作线程数={}", Runtime.getRuntime().availableProcessors());
+        log.info("[FairScheduler] 启动完成，工作线程数={}, workerPool队列上限={}",
+                workers, queueCapacity);
     }
 
     // ----------------------------------------------------------------
@@ -86,9 +110,12 @@ public class FairTaskScheduler {
     /**
      * 提交任务
      *
+     * 修复A：调用 UserQueue.enqueue() 时检查队列上限，超限返回 false。
+     *
      * @param task 任务对象（userId 标识提交者）
+     * @return true=入队成功；false=该用户队列已满，调用方应返回 429
      */
-    public void submitTask(Task task) {
+    public boolean submitTask(Task task) {
         lock.lock();
         try {
             UserQueue uq = userQueues.computeIfAbsent(task.getUserId(), uid -> {
@@ -98,15 +125,20 @@ public class FairTaskScheduler {
                 return newUq;
             });
 
+            // 修复A：队列满时拒绝入队
             boolean wasEmpty = uq.isEmpty();
-            uq.enqueue(task);
+            if (!uq.enqueue(task)) {
+                log.warn("[FairScheduler] 队列已满，拒绝入队: userId={}, size={}/{}",
+                        task.getUserId(), uq.size(), UserQueue.MAX_SIZE);
+                return false;
+            }
             log.debug("[FairScheduler] 任务入队: {}", task);
 
-            // 若该用户队列之前为空（不在 readyQueue 中），现在重新加入
             if (wasEmpty) {
                 readyQueue.offer(uq);
             }
             notEmpty.signal();
+            return true;
         } finally {
             lock.unlock();
         }
@@ -220,6 +252,31 @@ public class FairTaskScheduler {
                 .mapToLong(UserQueue::getVirtualTime)
                 .min()
                 .orElse(0L);
+    }
+
+    /**
+     * 修复C：定时清理 userQueues 中队列已空的用户条目，防止长期运行后内存持续增长。
+     *
+     * userQueues 持有所有曾经提交过任务的用户的 UserQueue 对象。
+     * 任务执行完毕后，UserQueue 本身并不会自动从 Map 中移除。
+     * 此方法每 5 分钟扫描一次，移除 pending==0 的条目，释放 UserQueue 及其内部对象。
+     *
+     * 下次该用户再提交任务时，会在 submitTask 中重新创建 UserQueue，
+     * 初始 vt = 当前全局最小 vt，仍然保证公平性。
+     */
+    @Scheduled(fixedDelay = 300_000)
+    public void cleanupInactiveUserQueues() {
+        lock.lock();
+        try {
+            int before = userQueues.size();
+            userQueues.entrySet().removeIf(e -> e.getValue().isEmpty());
+            int removed = before - userQueues.size();
+            if (removed > 0) {
+                log.info("[FairScheduler] 清理了 {} 个空队列用户，剩余 {} 个", removed, userQueues.size());
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     @PreDestroy

@@ -1,5 +1,6 @@
 package com.example.demo.UserTaskFairScheduling.single;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,11 +28,20 @@ public class TaskController {
     /**
      * 提交单个任务
      * Body: { "userId": "alice", "payload": "job-001", "cost": 1 }
+     *
+     * 若该用户队列已满（超过 UserQueue.MAX_SIZE），返回 429 Too Many Requests。
      */
     @PostMapping("/tasks")
     public ResponseEntity<Map<String, String>> submit(@RequestBody SubmitRequest req) {
         Task task = new Task(req.userId(), req.payload(), req.cost() > 0 ? req.cost() : 1);
-        scheduler.submitTask(task);
+        boolean accepted = scheduler.submitTask(task);
+        if (!accepted) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
+                    "userId", req.userId(),
+                    "status", "REJECTED",
+                    "reason", "用户队列已满（上限 " + UserQueue.MAX_SIZE + "），请稍后重试"
+            ));
+        }
         return ResponseEntity.ok(Map.of(
                 "taskId", task.getTaskId(),
                 "userId", task.getUserId(),
@@ -42,19 +52,28 @@ public class TaskController {
     /**
      * 批量提交任务（模拟大用户一次性涌入大量任务）
      * Body: { "userId": "alice", "count": 50, "cost": 1 }
+     *
+     * 返回实际入队数量与被拒绝数量。
      */
     @PostMapping("/tasks/batch")
     public ResponseEntity<Map<String, Object>> batchSubmit(@RequestBody BatchRequest req) {
-        int count = Math.min(req.count(), 200);     // 最多 200 个，防止误操作
+        int count    = Math.min(req.count(), 200);
+        int queued   = 0;
+        int rejected = 0;
         for (int i = 0; i < count; i++) {
             Task task = new Task(req.userId(), req.userId() + "-job-" + i,
                     req.cost() > 0 ? req.cost() : 1);
-            scheduler.submitTask(task);
+            if (scheduler.submitTask(task)) {
+                queued++;
+            } else {
+                rejected++;
+            }
         }
-        return ResponseEntity.ok(Map.of(
-                "userId",    req.userId(),
-                "submitted", count,
-                "status",    "QUEUED"
+        HttpStatus status = rejected == 0 ? HttpStatus.OK : HttpStatus.TOO_MANY_REQUESTS;
+        return ResponseEntity.status(status).body(Map.of(
+                "userId",   req.userId(),
+                "queued",   queued,
+                "rejected", rejected
         ));
     }
 
