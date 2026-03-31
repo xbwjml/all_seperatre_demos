@@ -8,3 +8,9 @@ spring:
 
 server:
   port: 8080
+
+demo:
+  fair-scheduling:
+    enabled: false   # 单机版 WFQ 演示开关，true 时启动自动运行
+  cluster-fair-scheduling:
+    enabled: false   # 集群版 WFQ 演示开关，true 时启动自动运行（需 Redis）

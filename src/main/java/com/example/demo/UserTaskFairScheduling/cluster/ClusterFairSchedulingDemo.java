@@ -3,6 +3,7 @@ package com.example.demo.UserTaskFairScheduling.cluster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @Order(2)
+@ConditionalOnProperty(name = "demo.cluster-fair-scheduling.enabled", havingValue = "true")
 public class ClusterFairSchedulingDemo implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterFairSchedulingDemo.class);

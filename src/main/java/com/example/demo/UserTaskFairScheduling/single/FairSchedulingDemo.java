@@ -3,6 +3,7 @@ package com.example.demo.UserTaskFairScheduling.single;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,7 @@ import java.util.concurrent.Executors;
  *   bob 和 carol 的任务不会被 alice 的大量任务饿死。
  */
 @Component
+@ConditionalOnProperty(name = "demo.fair-scheduling.enabled", havingValue = "true")
 public class FairSchedulingDemo implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(FairSchedulingDemo.class);
