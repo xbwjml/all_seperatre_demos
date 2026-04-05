@@ -17,3 +17,6 @@ demo:
   transfer:
     test-initializer:
       enabled: false  # 转账模块 AccountController API 集成测试开关，true 时启动自动运行
+  payment:
+    test-initializer:
+      enabled: false  # 支付模块 API 集成测试开关，true 时启动自动运行

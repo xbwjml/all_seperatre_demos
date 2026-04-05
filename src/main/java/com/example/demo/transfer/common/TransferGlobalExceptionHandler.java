@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice(basePackages = "com.example.demo.transfer")
-public class GlobalExceptionHandler {
+public class TransferGlobalExceptionHandler {
 
     @ExceptionHandler(AccountNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
