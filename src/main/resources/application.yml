@@ -14,3 +14,6 @@ demo:
     enabled: false   # 单机版 WFQ 演示开关，true 时启动自动运行
   cluster-fair-scheduling:
     enabled: false   # 集群版 WFQ 演示开关，true 时启动自动运行（需 Redis）
+  transfer:
+    test-initializer:
+      enabled: false  # 转账模块 AccountController API 集成测试开关，true 时启动自动运行
