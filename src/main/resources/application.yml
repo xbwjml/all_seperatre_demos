@@ -1,6 +1,10 @@
 spring:
   application:
     name: demo
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
   data:
     redis:
       host: localhost
@@ -20,3 +24,18 @@ demo:
   payment:
     test-initializer:
       enabled: false  # 支付模块 API 集成测试开关，true 时启动自动运行
+  hive-sync:
+    enabled: false    # Hive 定时批量同步开关，true 时激活（需配置 MySQL 和 Hive 连接）
+    run-on-startup: false  # true 时启动后立即触发一次全量同步（用于调试）
+    incremental-sync-cron: "0 0 * * * *"   # 增量同步：每小时整点
+    full-sync-cron: "0 0 1 * * *"          # 全量同步：每天凌晨 1 点
+    mysql:
+      url: jdbc:mysql://localhost:3306/order_db?useSSL=false&serverTimezone=Asia/Shanghai
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    hive:
+      url: jdbc:hive2://localhost:10000/default
+      username: hive
+      password: ""
+      driver-class-name: org.apache.hive.jdbc.HiveDriver
