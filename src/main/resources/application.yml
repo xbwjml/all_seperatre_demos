@@ -39,3 +39,15 @@ demo:
       username: hive
       password: ""
       driver-class-name: org.apache.hive.jdbc.HiveDriver
+  pay-stock:
+    enabled: false    # 支付扣库存（本地消息表+RocketMQ）开关
+    mysql:
+      url: jdbc:mysql://localhost:3306/pay_stock_db?useSSL=false&serverTimezone=Asia/Shanghai
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: pay-stock-producer-group
