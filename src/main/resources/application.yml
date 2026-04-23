@@ -39,6 +39,15 @@ demo:
       username: hive
       password: ""
       driver-class-name: org.apache.hive.jdbc.HiveDriver
+  merchandise-search:
+    enabled: false    # 商品搜索（Elasticsearch 演示）开关，true 时启动自动建索引并写样例数据
+    es-base-url: http://localhost:9200
+    index-name: products
+    analyzer: standard         # 生产建议 ik_max_word（需安装 IK 插件）
+    search-analyzer: standard  # 生产建议 ik_smart
+    seed-on-startup: false
+    number-of-shards: 3
+    number-of-replicas: 0
   pay-stock:
     enabled: false    # 支付扣库存（本地消息表+RocketMQ）开关
     mysql:
