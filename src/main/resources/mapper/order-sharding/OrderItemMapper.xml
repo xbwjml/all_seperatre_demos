@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.ShardingSphereCases.orderCase.mapper.OrderItemMapper">
+
+    <resultMap id="OrderItemResultMap" type="com.example.demo.ShardingSphereCases.orderCase.domain.OrderItem">
+        <result property="orderId"    column="order_id"     jdbcType="BIGINT"/>
+        <result property="userId"     column="user_id"      jdbcType="BIGINT"/>
+        <result property="skuId"      column="sku_id"       jdbcType="BIGINT"/>
+        <result property="spuId"      column="spu_id"       jdbcType="BIGINT"/>
+        <result property="skuName"    column="sku_name"     jdbcType="VARCHAR"/>
+        <result property="price"      column="price"        jdbcType="DECIMAL"/>
+        <result property="quantity"   column="quantity"     jdbcType="INTEGER"/>
+        <result property="createTime" column="create_time"  jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        order_id, user_id, sku_id, spu_id, sku_name, price, quantity, create_time
+    </sql>
+
+    <!--
+      批量插入子项, 使用 MySQL 多值 VALUES 语法; 与父订单同事务、同分片(绑定表)。
+      foreach 展开为: VALUES (...), (...), (...)
+    -->
+    <insert id="batchInsert">
+        INSERT INTO t_order_item (
+            order_id, user_id, sku_id, spu_id, sku_name, price, quantity, create_time
+        ) VALUES
+        <foreach collection="items" item="it" separator=",">
+            (
+                #{it.orderId,jdbcType=BIGINT},
+                #{it.userId,jdbcType=BIGINT},
+                #{it.skuId,jdbcType=BIGINT},
+                #{it.spuId,jdbcType=BIGINT},
+                #{it.skuName,jdbcType=VARCHAR},
+                #{it.price,jdbcType=DECIMAL},
+                #{it.quantity,jdbcType=INTEGER},
+                #{it.createTime,jdbcType=TIMESTAMP}
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectByUserAndOrderId" resultMap="OrderItemResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_order_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND order_id = #{orderId,jdbcType=BIGINT}
+    </select>
+
+</mapper>

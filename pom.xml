@@ -70,6 +70,30 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
+        <!-- ShardingSphere JDBC（订单分库分表演示 orderCase 模块使用） -->
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-jdbc</artifactId>
+            <version>5.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-sharding-api</artifactId>
+            <version>5.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-infra-common</artifactId>
+            <version>5.5.2</version>
+        </dependency>
+
+        <!-- MyBatis Spring Boot Starter（orderCase 模块使用，3.0.x 适配 Spring Boot 3.x） -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+
         <!-- RocketMQ Spring Boot Starter -->
         <dependency>
             <groupId>org.apache.rocketmq</groupId>

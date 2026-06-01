@@ -5,6 +5,7 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration
   data:
     redis:
       host: localhost
@@ -55,6 +56,19 @@ demo:
       username: root
       password: root
       driver-class-name: com.mysql.cj.jdbc.Driver
+  order-sharding:
+    enabled: false   # ShardingSphere 订单分库分表演示，true 时启用 (需先建库或开启 init-schema)
+    base-url: jdbc:mysql://localhost:3306/
+    url-params: "?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=UTF-8"
+    schemas:
+      - order_db_0
+      - order_db_1
+    username: root
+    password: root
+    table-count-per-db: 4
+    init-schema: false   # true 时启动自动创建 schemas 与物理表
+    worker-id: 0         # 雪花 workerId, 多实例必须不同 (取值 0..15)
+    max-pool-size: 10
 
 rocketmq:
   name-server: localhost:9876
